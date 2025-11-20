@@ -1,4 +1,10 @@
-export enum TweetStyle {
+
+export enum Platform {
+  X = 'X (Twitter)',
+  LINKEDIN = 'LinkedIn'
+}
+
+export enum PostStyle {
   PROFESSIONAL = 'Professional & Insightful',
   HYPE = 'Excited & Hype',
   EDUCATIONAL = 'Educational & Tutorial',
@@ -7,23 +13,26 @@ export enum TweetStyle {
 }
 
 export enum PostType {
-  SINGLE = 'Single Tweet',
-  THREAD = 'Thread (3-5 tweets)'
+  SINGLE = 'Short Post',
+  THREAD = 'Thread / Long-form'
 }
 
-export interface TweetOption {
-  content: string[]; // Array of strings. If single tweet, length is 1.
+export interface PostOption {
+  content: string[]; // Array of strings. If X thread, multiple items. If LI, usually 1 item.
   reasoning: string; // Why the AI wrote it this way
 }
 
 export interface GeneratedResult {
-  options: TweetOption[];
+  options: PostOption[];
   sources?: Array<{ title: string; uri: string }>; // For grounding
+  imageData?: string; // Base64 encoded image string
 }
 
 export interface GenerateRequest {
   topic: string;
-  style: TweetStyle;
+  style: PostStyle;
   type: PostType;
+  platform: Platform;
   useSearch: boolean;
+  generateImage: boolean;
 }

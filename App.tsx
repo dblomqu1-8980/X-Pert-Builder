@@ -1,14 +1,17 @@
+
 import React, { useState } from 'react';
 import { generateTweets } from './services/geminiService';
-import { TweetStyle, PostType, GeneratedResult, TweetOption } from './types';
-import TweetCard from './components/TweetCard';
+import { PostStyle, PostType, GeneratedResult, Platform } from './types';
+import PostCard from './components/TweetCard';
 
 const App: React.FC = () => {
   // State
   const [topic, setTopic] = useState('');
-  const [style, setStyle] = useState<TweetStyle>(TweetStyle.PROFESSIONAL);
+  const [style, setStyle] = useState<PostStyle>(PostStyle.PROFESSIONAL);
   const [type, setType] = useState<PostType>(PostType.SINGLE);
+  const [platform, setPlatform] = useState<Platform>(Platform.X);
   const [useSearch, setUseSearch] = useState(false);
+  const [generateImage, setGenerateImage] = useState(false);
   
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<GeneratedResult | null>(null);
@@ -22,14 +25,23 @@ const App: React.FC = () => {
     setResult(null);
 
     try {
-      const data = await generateTweets({ topic, style, type, useSearch });
+      const data = await generateTweets({ topic, style, type, platform, useSearch, generateImage });
       setResult(data);
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Failed to generate tweets. Please try again.");
+      setError(err.message || "Failed to generate posts. Please try again.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const downloadImage = (base64Data: string) => {
+    const link = document.createElement('a');
+    link.href = `data:image/png;base64,${base64Data}`;
+    link.download = 'generated-post-image.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -40,10 +52,34 @@ const App: React.FC = () => {
           <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
             X-Pert Builder
           </h1>
-          <p className="text-neutral-500 text-sm mt-1">Build your AI brand on X.</p>
+          <p className="text-neutral-500 text-sm mt-1">Build your AI brand on X & LinkedIn.</p>
         </div>
 
         <div className="space-y-6">
+          {/* Platform Selector */}
+           <div>
+            <label className="block text-sm font-medium text-neutral-300 mb-2">
+              Platform
+            </label>
+            <div className="flex bg-neutral-900 p-1 rounded-lg">
+              {Object.values(Platform).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPlatform(p)}
+                  className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
+                    platform === p
+                      ? p === Platform.X 
+                        ? 'bg-neutral-800 text-white shadow-sm' 
+                        : 'bg-[#0a66c2] text-white shadow-sm'
+                      : 'text-neutral-500 hover:text-neutral-300'
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Topic Input */}
           <div>
             <label className="block text-sm font-medium text-neutral-300 mb-2">
@@ -64,13 +100,13 @@ const App: React.FC = () => {
               Vibe / Style
             </label>
             <div className="grid grid-cols-1 gap-2">
-              {Object.values(TweetStyle).map((s) => (
+              {Object.values(PostStyle).map((s) => (
                 <button
                   key={s}
                   onClick={() => setStyle(s)}
                   className={`text-left px-4 py-2 rounded-lg text-sm transition-all ${
                     style === s
-                      ? 'bg-blue-600 text-white font-medium'
+                      ? 'bg-neutral-700 text-white font-medium ring-1 ring-neutral-500'
                       : 'bg-neutral-900 text-neutral-400 hover:bg-neutral-800'
                   }`}
                 >
@@ -102,24 +138,47 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Search Toggle */}
-          <div className="flex items-center justify-between bg-neutral-900 p-3 rounded-lg border border-neutral-800">
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-white">Ground with Google Search</span>
-              <span className="text-xs text-neutral-500">Find latest news & facts</span>
-            </div>
-            <button
-              onClick={() => setUseSearch(!useSearch)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                useSearch ? 'bg-blue-500' : 'bg-neutral-700'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  useSearch ? 'translate-x-6' : 'translate-x-1'
+          {/* Toggles */}
+          <div className="space-y-3">
+            {/* Search Toggle */}
+            <div className="flex items-center justify-between bg-neutral-900 p-3 rounded-lg border border-neutral-800">
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-white">Ground with Search</span>
+                <span className="text-xs text-neutral-500">Find latest news & facts</span>
+              </div>
+              <button
+                onClick={() => setUseSearch(!useSearch)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  useSearch ? 'bg-blue-500' : 'bg-neutral-700'
                 }`}
-              />
-            </button>
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    useSearch ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Image Toggle */}
+            <div className="flex items-center justify-between bg-neutral-900 p-3 rounded-lg border border-neutral-800">
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-white">Generate Image</span>
+                <span className="text-xs text-neutral-500">Create AI visual for post</span>
+              </div>
+              <button
+                onClick={() => setGenerateImage(!generateImage)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  generateImage ? 'bg-purple-500' : 'bg-neutral-700'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    generateImage ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
           </div>
 
           {/* Action Button */}
@@ -138,10 +197,10 @@ const App: React.FC = () => {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-                Generating...
+                Creating...
               </span>
             ) : (
-              'Generate Posts'
+              'Generate Content'
             )}
           </button>
         </div>
@@ -169,7 +228,7 @@ const App: React.FC = () => {
               <div className="flex justify-between items-end mb-8">
                 <div>
                   <h2 className="text-3xl font-bold text-white">Drafts</h2>
-                  <p className="text-neutral-400 mt-1">Here are 3 AI-generated options for you.</p>
+                  <p className="text-neutral-400 mt-1">Here are 3 AI-generated options for {platform}.</p>
                 </div>
                 {result.sources && result.sources.length > 0 && (
                    <div className="text-right">
@@ -185,9 +244,31 @@ const App: React.FC = () => {
                 )}
               </div>
 
+              {/* Generated Image Section */}
+              {result.imageData && (
+                <div className="mb-8 p-4 bg-neutral-900/50 border border-neutral-800 rounded-xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-bold text-purple-400 uppercase tracking-wider">Generated Visual</h3>
+                    <button 
+                      onClick={() => downloadImage(result.imageData!)}
+                      className="text-xs bg-white text-black px-3 py-1.5 rounded font-medium hover:bg-neutral-200 transition-colors"
+                    >
+                      Download Image
+                    </button>
+                  </div>
+                  <div className="flex justify-center bg-black/50 rounded-lg p-2">
+                    <img 
+                      src={`data:image/png;base64,${result.imageData}`} 
+                      alt="AI Generated Social Media Visual" 
+                      className="max-h-[400px] w-auto rounded-lg shadow-2xl"
+                    />
+                  </div>
+                </div>
+              )}
+
               <div className="grid gap-4">
                 {result.options.map((option, idx) => (
-                  <TweetCard key={idx} option={option} index={idx} />
+                  <PostCard key={idx} option={option} index={idx} platform={platform} />
                 ))}
               </div>
             </div>
